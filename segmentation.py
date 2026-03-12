@@ -1,13 +1,20 @@
 import cv2
 import numpy as np
-import mediapipe as mp
 
-mp_face_mesh = mp.solutions.face_mesh
+try:
+    import mediapipe as mp
+    mp_face_mesh = mp.solutions.face_mesh
+except (ImportError, AttributeError):
+    mp = None
+    mp_face_mesh = None
 
 def get_face_landmarks(image_cv):
     """
     Sử dụng MediaPipe Face Mesh để lấy landmarks của khuôn mặt.
     """
+    if mp_face_mesh is None:
+        return None
+        
     with mp_face_mesh.FaceMesh(
         static_image_mode=True,
         max_num_faces=1,
