@@ -21,19 +21,33 @@ if uploaded_file is not None:
     image_pil = Image.open(uploaded_file)
     image_cv = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
     
+    # Khởi tạo trạng thái xoay ảnh trong session_state
+    if "rotation" not in st.session_state:
+        st.session_state.rotation = 0
+        
     # Chia giao diện thành 2 cột để so sánh Trước/Sau
     col1, col2 = st.columns(2)
     
     # Khai báo biến rotation sớm để dùng cho cả ảnh gốc
     with col1:
-        st.subheader("📸 Ảnh gốc")
-        obj_rotate = st.slider("🔄 Xoay ảnh (°)", -180, 180, 0, key="rotate_original")
+        # Tiêu đề và nút xoay trên cùng 1 hàng
+        c1, c2 = st.columns([0.85, 0.15])
+        with c1:
+            st.subheader("📸 Ảnh gốc")
+        with c2:
+            if st.button("↻", help="Xoay ảnh 90 độ"):
+                st.session_state.rotation = (st.session_state.rotation + 90) % 360
+                
+        # Quy chuẩn độ xoay về mảng [-180, -90, 0, 90, 180] cho dễ hiểu logic hiển thị
+        current_rotation = st.session_state.rotation
+        if current_rotation > 180:
+            current_rotation -= 360
         
         # Áp dụng xoay ảnh ngay từ đầu lên image_cv
-        if obj_rotate != 0:
+        if current_rotation != 0:
             (h, w) = image_cv.shape[:2]
             center = (w // 2, h // 2)
-            M = cv2.getRotationMatrix2D(center, obj_rotate, 1.0)
+            M = cv2.getRotationMatrix2D(center, current_rotation, 1.0)
             
             cos = np.abs(M[0, 0])
             sin = np.abs(M[0, 1])
