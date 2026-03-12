@@ -64,19 +64,37 @@ if uploaded_file is not None:
         elif "Ám Đỏ" in color_status:
             def_temp = -20
         
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
         obj_brightness = st.slider("Độ sáng (Brightness)", -100, 100, def_bright)
     with c2:
         obj_contrast = st.slider("Độ tương phản (Contrast)", -100, 100, 0)
     with c3:
         obj_temp = st.slider("Nhiệt độ màu (Temperature)", -100, 100, def_temp)
+    with c4:
+        obj_rotate = st.slider("Xoay ảnh (°)", -180, 180, 0)
         
     st.markdown("#### Tính năng Nâng cao (AI Segmentation)")
     enable_skin_whitening = st.checkbox("Làm sáng & Trắng da mặt bằng AI")
     
     # === MODULE 2 & 3: Phân vùng và Xử lý ===
     with st.spinner("Đang xử lý ảnh..."):
+        # Bước 0: Xoay ảnh
+        if obj_rotate != 0:
+            (h, w) = image_cv.shape[:2]
+            center = (w // 2, h // 2)
+            M = cv2.getRotationMatrix2D(center, obj_rotate, 1.0)
+            
+            # Tính toán kích thước ảnh mới bao quanh vừa vặn để không bị cắt gút
+            cos = np.abs(M[0, 0])
+            sin = np.abs(M[0, 1])
+            new_w = int((h * sin) + (w * cos))
+            new_h = int((h * cos) + (w * sin))
+            M[0, 2] += (new_w / 2) - center[0]
+            M[1, 2] += (new_h / 2) - center[1]
+            
+            image_cv = cv2.warpAffine(image_cv, M, (new_w, new_h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+            
         # Bước 1: Chỉnh sửa cơ bản trên toàn khung hình
         processed_cv = adjust_brightness_contrast(image_cv.copy(), brightness=obj_brightness, contrast=obj_contrast)
         processed_cv = adjust_temperature(processed_cv, temperature=obj_temp)
