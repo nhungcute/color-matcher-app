@@ -1,63 +1,37 @@
 import streamlit as st
+from PIL import Image, ImageEnhance
 import numpy as np
-from PIL import Image
-from skimage import exposure
 
-def match_color(target_img, ref_img):
-    # Chuyển đổi ảnh sang dạng mảng số (numpy array)
-    target = np.array(target_img)
-    ref = np.array(ref_img)
+# Tiêu đề của trang web
+st.title("Công cụ Chỉnh sửa Màu Ảnh AI 🎨")
+st.write("Tải ảnh của bạn lên để hệ thống phân tích và chỉnh sửa!")
 
-    # Áp dụng histogram matching
-    # channel_axis=-1 để xử lý đa kênh màu (RGB)
-    matched = exposure.match_histograms(target, ref, channel_axis=-1)
+# Tạo nút Upload file
+uploaded_file = st.file_uploader("Chọn một bức ảnh...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    # 1. Đọc ảnh người dùng tải lên
+    image = Image.open(uploaded_file)
     
-    return Image.fromarray(matched.astype('uint8'))
-
-# --- GIAO DIỆN WEB ---
-st.title("🎨 Tool Copy Màu Ảnh (Color Transfer)")
-st.write("Upload ảnh mẫu và ảnh cần chỉnh để đồng bộ màu sắc.")
-
-# Cột trái: Upload ảnh mẫu (Reference)
-col1, col2 = st.columns(2)
-with col1:
-    st.header("1. Ảnh Mẫu (Lấy màu)")
-    ref_file = st.file_uploader("Chọn ảnh mẫu", type=['jpg', 'png', 'jpeg'], key="ref")
-    if ref_file:
-        ref_image = Image.open(ref_file)
-        st.image(ref_image, caption="Ảnh mẫu", use_container_width=True)
-
-# Cột phải: Upload ảnh cần chỉnh (Target) - Hỗ trợ nhiều ảnh
-with col2:
-    st.header("2. Ảnh Cần Chỉnh")
-    target_files = st.file_uploader("Chọn ảnh cần chỉnh (có thể chọn nhiều)", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True, key="target")
-
-# Nút xử lý
-if st.button("🚀 Thực hiện Copy Màu") and ref_file and target_files:
-    st.divider()
-    st.subheader("Kết quả")
+    # Chia giao diện thành 2 cột để so sánh Trước/Sau cho đẹp
+    col1, col2 = st.columns(2)
     
-    for t_file in target_files:
-        target_image = Image.open(t_file)
-        
-        # Xử lý màu
-        result_image = match_color(target_image, ref_image)
-        
-        # Hiển thị kết quả so sánh
-        c1, c2 = st.columns(2)
-        c1.image(target_image, caption="Gốc", use_container_width=True)
-        c2.image(result_image, caption="Đã chỉnh màu", use_container_width=True)
-        
-        # Nút download (cần chuyển ảnh thành bytes để tải về)
-        from io import BytesIO
-        buf = BytesIO()
-        result_image.save(buf, format="JPEG")
-        byte_im = buf.getvalue()
-        
-        st.download_button(
-            label=f"⬇️ Tải ảnh {t_file.name} về",
-            data=byte_im,
-            file_name=f"edited_{t_file.name}",
-            mime="image/jpeg"
-        )
-        st.divider()
+    with col1:
+        st.subheader("Ảnh gốc")
+        st.image(image, use_container_width=True)
+
+    # 2. Khu vực Giả lập AI & Điều chỉnh
+    st.markdown("---")
+    st.subheader("⚙️ Tùy chỉnh (AI sẽ tự động đánh giá phần này)")
+    
+    # Thanh trượt chỉnh độ sáng (Ví dụ demo)
+    brightness_factor = st.slider("Độ sáng (Brightness)", 0.5, 2.0, 1.0)
+    
+    # Logic xử lý ảnh (Bạn sẽ nhúng model AI, OpenCV vào đây)
+    enhancer = ImageEnhance.Brightness(image)
+    edited_image = enhancer.enhance(brightness_factor)
+
+    # 3. Hiển thị ảnh Kết quả
+    with col2:
+        st.subheader("Ảnh kết quả")
+        st.image(edited_image, use_container_width=True)
